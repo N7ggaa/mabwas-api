@@ -23,6 +23,8 @@ app.use('/api/media', mediaRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date() }));
 
+app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date() }));
+
 const server = http.createServer(app);
 const io = new IOServer(server, { cors: { origin: '*' } });
 
