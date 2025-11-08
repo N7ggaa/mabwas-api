@@ -6,6 +6,8 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
+import passport from 'passport';
+import session from 'express-session'; // Required for Passport.js session management
 
 dotenv.config();
 await connectDB();
@@ -13,6 +15,19 @@ await connectDB();
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
+
+// Passport.js setup
+app.use(session({
+  secret: process.env.JWT_SECRET, // Use a strong secret from environment variables
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production' } // Use secure cookies in production
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Import Passport strategies after Passport is initialized
+import './config/passport.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
