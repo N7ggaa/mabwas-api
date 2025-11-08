@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import crypto from 'crypto';
+import transporter from '../utils/email.js';
 
 export const signup = async (req, res) => {
   try {
@@ -74,6 +76,70 @@ export const login = async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const resetToken = crypto.randomBytes(20).toString('hex');
+        user.passwordResetToken = resetToken;
+        user.passwordResetExpires = Date.now() + 3600000; // 1 hour
+        await user.save();
+
+        const resetURL = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+
+        const message = {
+            from: '"Mabwas" <noreply@mabwas.com>',
+            to: user.email,
+            subject: 'Password Reset Request',
+            text: `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetURL}`,
+        };
+
+        await transporter.sendMail(message);
+
+        res.status(200).json({ message: 'Email sent' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.query;
+        const { password } = req.body;
+
+        const user = await User.findOne({
+            passwordResetToken: token,
+            passwordResetExpires: { $gt: Date.now() },
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Password reset token is invalid or has expired' });
+        }
+
+        user.password = password;
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Password updated' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const socialAuthCallback = (req, res) => {
+  // Successful authentication, generate JWT and redirect
+  const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  // Redirect to frontend with token
+  res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
 };
 
 export const getMe = async (req, res) => {
