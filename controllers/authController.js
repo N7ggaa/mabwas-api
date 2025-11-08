@@ -75,3 +75,29 @@ export const login = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('GetMe error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

@@ -28,9 +28,19 @@ export const upload = async (req, res) => {
 export const list = async (req, res) => {
   try {
     const userMedia = await Media.find({ user: req.user.userId });
-    res.json({ files: userMedia });
+    res.json(userMedia);
   } catch (error) {
     console.error('List media error:', error);
     res.status(500).json({ message: 'Failed to list media' });
+  }
+};
+
+export const listByUser = async (req, res) => {
+  try {
+    const userMedia = await Media.find({ user: req.params.userId });
+    res.json(userMedia);
+  } catch (error) {
+    console.error('List media by user error:', error);
+    res.status(500).json({ message: 'Failed to list media for user' });
   }
 };
